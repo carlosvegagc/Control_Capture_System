@@ -1,3 +1,12 @@
+
+/**
+*    Functions to standarize Uart communications
+*
+*    Authors: Carlos Vega, 
+*    Email: cvega@iuma.ulpgc.es
+*/
+
+
 #include <Arduino.h>
 #include "serial_functions.h"
 

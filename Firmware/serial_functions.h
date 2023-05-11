@@ -1,4 +1,10 @@
 
+/**
+*    Functions to standarize Uart communications
+*
+*    Authors: Carlos Vega, 
+*    Email: cvega@iuma.ulpgc.es
+*/
 
 #ifndef SERIAL_FUNCT
 #define SERIAL_FUNCT
