@@ -10,13 +10,12 @@
 
 
 #define USE_TIMER_1 true
+// #define DEBUG
 
 
 #include "serial_functions.h"
 #include "bsp_functions.h"
-
 #include "mpu9250.h"
-
 #include <Ticker.h>
 
 #define TIMER1_INTERVAL_MS 10000
@@ -35,46 +34,59 @@ bool f_serialNewLine = false; // whether the string is complete
 String inputString = ""; // a String to hold incoming data
 
 //Button variables.
-const int buttonPin = 2;  // GPIO pin connected to the button
+const int buttonPin = 34;  // GPIO pin connected to the button
 bool buttonState = false;     // variable to store the button state
 
 // LED Variables
-const int ledPin = 3;  // GPIO pin connected to the LED
+const int ledPin = 20;  // GPIO pin connected to the LED
 const int ledMotionPin = 4;  // GPIO pin connected to the LED
 
-void buttonPressed()
-{
-  if (!buttonState)
-  {
-    buttonState = true;
-    Serial.println("Button pressed!");
-  }
-}
 
-void buttonReleased()
-{
-  buttonState = false;
-}
 
 void timerTick()
 {
   digitalWrite(ledPin, !digitalRead(ledPin));  // toggle the LED state
 }
 
+/* 
+  Serial event that saves the incoming data into a string until it recieves a \n
+*/
+void onReceiveFunction()
+{
+  #ifdef DEBUG
+  Serial.println("Event Serial");
+  #endif
+
+  while (Serial.available())
+  {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+
+    // add it to the inputString:
+    inputString += inChar;
+
+    // if the incoming character is a newline, set a flag so the main loop can
+    // do something about it:
+    if (inChar == '\n')
+    {
+      f_serialNewLine = true;
+    }
+  }
+}
+
+
 // Code for the initialization of the system
 void setup()
 {
   // initialize serial:
-  Serial.begin(9600);
+  Serial.begin(115200);
+  Serial.onReceive(onReceiveFunction); 
 
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
-
   
   Serial.print(F("\nStarting Antenna Development Platform "));
   Serial.print(F("CPU Frequency = ")); Serial.print(F_CPU / 1000000); Serial.println(F(" MHz"));
-
-
 
   //Inits the MPU
  /* Start the SPI bus */
@@ -82,15 +94,14 @@ void setup()
   /* Initialize and configure IMU */
   if (!imu.Begin()) {
     Serial.println("Error initializing communication with IMU");
-    while(1) {}
   }
 
   //Init the button.
   pinMode(ledPin, OUTPUT);
   pinMode(ledMotionPin, OUTPUT);
   pinMode(buttonPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonPressed, RISING);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonReleased, FALLING);
+  // attachInterrupt(digitalPinToInterrupt(buttonPin), buttonPressed, RISING);
+  // attachInterrupt(digitalPinToInterrupt(buttonPin), buttonReleased, FALLING);
   
   timer.attach(10, timerTick);  // call the toggleLED function every 10 milliseconds
 
@@ -171,6 +182,15 @@ int exeCommand(SerialCommand inCommand)
     return 0;
   }
 
+  // Version Command
+  else if (inCommand.command == 'V')
+  {
+    
+    Serial.println("V:0.1 Control Capture System");  
+    return 0;
+
+  }
+
 
   else
   {
@@ -182,7 +202,7 @@ int exeCommand(SerialCommand inCommand)
 
 void loop()
 {
- 
+
   // This code is executed when a new command arrives
   if (f_serialNewLine)
   {
@@ -205,37 +225,19 @@ void loop()
   int newButtonState = digitalRead(buttonPin);  // read the button state
   // Checks for the rising event
   if (newButtonState == HIGH && buttonState == LOW) {
-    Serial.println("Button pressed!");
+    Serial.println("P:");
   }
   buttonState = newButtonState;
 
-  // Read one value from the IMU
-  if (imu.Read()) {
+  // // Read one value from the IMU
+  // if (imu.Read()) {
 
-    // TODO: Add    
+  //   // TODO: Add    
 
-  }
+  // }
 
+  // Wait for 5 seconds
+  delay(5);
+  
 }
 
-/* 
-  Serial event that saves the incoming data into a string until it recieves a \n
-*/
-void serialEvent()
-{
-  while (Serial.available())
-  {
-    // get the new byte:
-    char inChar = (char)Serial.read();
-
-    // add it to the inputString:
-    inputString += inChar;
-
-    // if the incoming character is a newline, set a flag so the main loop can
-    // do something about it:
-    if (inChar == '\n')
-    {
-      f_serialNewLine = true;
-    }
-  }
-}
