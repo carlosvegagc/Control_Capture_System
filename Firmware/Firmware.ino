@@ -10,7 +10,7 @@
 
 
 #define USE_TIMER_1 true
-// #define DEBUG
+//#define DEBUG
 
 
 #include "serial_functions.h"
@@ -21,8 +21,11 @@
 #define TIMER1_INTERVAL_MS 10000
 #define WAIT_TIME_SERVO 100
 
-
 Ticker timer;
+bool getMean;
+#define BUFFER_SIZE 10
+double IMUBuffer[BUFFER_SIZE];
+
 
 /* Mpu9250 object, SPI bus, CS on pin 10 */
 bfs::Mpu9250 imu(&SPI, 10);
@@ -39,7 +42,7 @@ bool buttonState = false;     // variable to store the button state
 
 // LED Variables
 const int ledPin = 20;  // GPIO pin connected to the LED
-const int ledMotionPin = 4;  // GPIO pin connected to the LED
+const int ledMotionPin = 26;  // GPIO pin connected to the LED
 
 
 
@@ -104,7 +107,11 @@ void setup()
   // attachInterrupt(digitalPinToInterrupt(buttonPin), buttonReleased, FALLING);
   
   timer.attach(10, timerTick);  // call the toggleLED function every 10 milliseconds
-
+  getMean = false;
+  for (int i=0; i<BUFFER_SIZE; i++){
+    IMUBuffer[i] = NAN;
+  }
+  
 }
 
 // Function to handle the communication commands.
@@ -191,6 +198,13 @@ int exeCommand(SerialCommand inCommand)
 
   }
 
+  else if (inCommand.command == 'I')
+  {
+    digitalWrite(ledMotionPin, !digitalRead(ledMotionPin));
+    getMean = !getMean;
+    return 0;
+  }
+
 
   else
   {
@@ -229,15 +243,27 @@ void loop()
   }
   buttonState = newButtonState;
 
-  // // Read one value from the IMU
-  // if (imu.Read()) {
+  if (getMean){
+    Serial.println(sizeof(IMUBuffer)/sizeof(double));
+    
+    for (int i=0; i<=BUFFER_SIZE; i++){
+      if (IMUBuffer[i] == NAN){
+        IMUBuffer[i]=i; // read IMU
+        Serial.println(IMUBuffer[i]);
+        continue;
+      }
+    }
+    getMean=false;
+  }
 
-  //   // TODO: Add    
-
-  // }
-
+  
   // Wait for 5 seconds
   delay(5);
   
 }
 
+double moveHeader(double bufferArray){
+  for (int i=1; i<= bufferArray; i++){
+    
+  }
+}
