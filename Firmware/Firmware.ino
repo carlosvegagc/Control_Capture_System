@@ -17,18 +17,23 @@
 #include "bsp_functions.h"
 #include "mpu9250.h"
 #include <Ticker.h>
+#include <Wire.h>
 
 #define TIMER1_INTERVAL_MS 10000
 #define WAIT_TIME_SERVO 100
 
 Ticker timer;
+
+
 bool getMean;
 #define BUFFER_SIZE 10
 double IMUBuffer[BUFFER_SIZE];
-
+#define SDA_PIN 14
+#define SCL_PIN 27
 
 /* Mpu9250 object, SPI bus, CS on pin 10 */
-bfs::Mpu9250 imu(&SPI, 10);
+//bfs::Mpu9250 imu(&SPI, 10);
+bfs::Mpu9250 imu(&Wire, bfs::Mpu9250::I2C_ADDR_PRIM);
 
 //EVENT FLAGS
 bool f_serialNewLine = false; // whether the string is complete
@@ -93,10 +98,15 @@ void setup()
 
   //Inits the MPU
  /* Start the SPI bus */
-  SPI.begin();
+  //SPI.begin();
   /* Initialize and configure IMU */
+  Wire.begin(SDA_PIN,SCL_PIN);
+  Serial.println("Initializing IMU...");
   if (!imu.Begin()) {
     Serial.println("Error initializing communication with IMU");
+  }
+  else {
+    Serial.println("IMU connected correctly");
   }
 
   //Init the button.
@@ -107,10 +117,18 @@ void setup()
   // attachInterrupt(digitalPinToInterrupt(buttonPin), buttonReleased, FALLING);
   
   timer.attach(10, timerTick);  // call the toggleLED function every 10 milliseconds
+  
+  
+  
+  
+  
   getMean = false;
   for (int i=0; i<BUFFER_SIZE; i++){
     IMUBuffer[i] = NAN;
   }
+
+  
+  
   
 }
 
@@ -140,31 +158,37 @@ int exeCommand(SerialCommand inCommand)
 
     // Read one value from the IMU
     if (imu.Read()) {
+
+      Serial.print("Aceleration on X: ");
+      Serial.println(imu.accel_x_mps2());
+      Serial.print("Aceleration on Y: ");
+      Serial.println(imu.accel_y_mps2());
+      Serial.print("Aceleration on Z: ");
+      Serial.println(imu.accel_z_mps2());
       
-      Serial.print(imu.new_imu_data());
-      Serial.print("\t");
-      Serial.print(imu.new_mag_data());
-      Serial.print("\t");
-      Serial.print(imu.accel_x_mps2());
-      Serial.print("\t");
-      Serial.print(imu.accel_y_mps2());
-      Serial.print("\t");
-      Serial.print(imu.accel_z_mps2());
-      Serial.print("\t");
-      Serial.print(imu.gyro_x_radps());
-      Serial.print("\t");
-      Serial.print(imu.gyro_y_radps());
-      Serial.print("\t");
-      Serial.print(imu.gyro_z_radps());
-      Serial.print("\t");
-      Serial.print(imu.mag_x_ut());
-      Serial.print("\t");
-      Serial.print(imu.mag_y_ut());
-      Serial.print("\t");
-      Serial.print(imu.mag_z_ut());
-      Serial.print("\t");
-      Serial.print(imu.die_temp_c());
-      Serial.print("\n");
+//      Serial.print(imu.new_imu_data());
+//      Serial.print("\t");
+//      Serial.print(imu.new_mag_data());
+//      Serial.print("\t");
+//      Serial.print(imu.accel_x_mps2());
+//      Serial.print("\t");
+//      Serial.print(imu.accel_y_mps2());
+//      Serial.print("\t");
+//      Serial.print(imu.accel_z_mps2());
+//      Serial.print("\t");
+//      Serial.print(imu.gyro_x_radps());
+//      Serial.print("\t");
+//      Serial.print(imu.gyro_y_radps());
+//      Serial.print("\t");
+//      Serial.print(imu.gyro_z_radps());
+//      Serial.print("\t");
+//      Serial.print(imu.mag_x_ut());
+//      Serial.print("\t");
+//      Serial.print(imu.mag_y_ut());
+//      Serial.print("\t");
+//      Serial.print(imu.mag_z_ut());
+//      Serial.print("\t");
+//      Serial.println(imu.die_temp_c());
     }
 
     return 0;
@@ -247,7 +271,8 @@ void loop()
     Serial.println(sizeof(IMUBuffer)/sizeof(double));
     
     for (int i=0; i<=BUFFER_SIZE; i++){
-      if (IMUBuffer[i] == NAN){
+      if (isnan(IMUBuffer[i])){
+        Serial.println("...");
         IMUBuffer[i]=i; // read IMU
         Serial.println(IMUBuffer[i]);
         continue;
