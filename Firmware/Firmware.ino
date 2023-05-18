@@ -25,9 +25,7 @@
 Ticker timer;
 
 
-bool getMean;
-#define BUFFER_SIZE 10
-double IMUBuffer[BUFFER_SIZE];
+bool motionFlag;
 #define SDA_PIN 14
 #define SCL_PIN 27
 
@@ -82,6 +80,12 @@ void onReceiveFunction()
   }
 }
 
+void wakeup() {
+  noInterrupts();
+  Serial.println("Motion");
+  motionFlag = true;
+}
+
 
 // Code for the initialization of the system
 void setup()
@@ -101,6 +105,7 @@ void setup()
   //SPI.begin();
   /* Initialize and configure IMU */
   Wire.begin(SDA_PIN,SCL_PIN);
+  imu.ConfigAccelRange(bfs::Mpu9250::ACCEL_RANGE_16G);
   Serial.println("Initializing IMU...");
   if (!imu.Begin()) {
     Serial.println("Error initializing communication with IMU");
@@ -118,18 +123,12 @@ void setup()
   
   timer.attach(10, timerTick);  // call the toggleLED function every 10 milliseconds
   
-  
-  
-  
-  
-  getMean = false;
-  for (int i=0; i<BUFFER_SIZE; i++){
-    IMUBuffer[i] = NAN;
-  }
 
-  
-  
-  
+  imu.EnableWom(40, bfs::Mpu9250::WOM_RATE_15_63HZ);
+  /* Attach the interrupt to pin 9 */
+  pinMode(33, INPUT);
+  attachInterrupt(33, wakeup, RISING);
+
 }
 
 // Function to handle the communication commands.
@@ -224,8 +223,9 @@ int exeCommand(SerialCommand inCommand)
 
   else if (inCommand.command == 'I')
   {
-    digitalWrite(ledMotionPin, !digitalRead(ledMotionPin));
-    getMean = !getMean;
+    digitalWrite(ledMotionPin, HIGH);
+    delay(1000);
+    digitalWrite(ledMotionPin, LOW);
     return 0;
   }
 
@@ -267,18 +267,24 @@ void loop()
   }
   buttonState = newButtonState;
 
-  if (getMean){
-    Serial.println(sizeof(IMUBuffer)/sizeof(double));
-    
-    for (int i=0; i<=BUFFER_SIZE; i++){
-      if (isnan(IMUBuffer[i])){
-        Serial.println("...");
-        IMUBuffer[i]=i; // read IMU
-        Serial.println(IMUBuffer[i]);
-        continue;
-      }
+  if (motionFlag){
+    //noInterrupts();
+    digitalWrite(ledMotionPin, HIGH);
+    delay(1000);
+    digitalWrite(ledMotionPin, LOW);
+    motionFlag = false;
+
+    if (imu.Read()) {
+
+      Serial.print("Aceleration on X: ");
+      Serial.println(imu.accel_x_mps2());
+      Serial.print("Aceleration on Y: ");
+      Serial.println(imu.accel_y_mps2());
+      Serial.print("Aceleration on Z: ");
+      Serial.println(imu.accel_z_mps2());
     }
-    getMean=false;
+
+    interrupts();
   }
 
   
