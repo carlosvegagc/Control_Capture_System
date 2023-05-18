@@ -28,6 +28,7 @@ Ticker timer;
 bool motionFlag;
 #define SDA_PIN 14
 #define SCL_PIN 27
+const int interruptPin = 33;
 
 /* Mpu9250 object, SPI bus, CS on pin 10 */
 //bfs::Mpu9250 imu(&SPI, 10);
@@ -81,7 +82,8 @@ void onReceiveFunction()
 }
 
 void wakeup() {
-  noInterrupts();
+  detachInterrupt(digitalPinToInterrupt(interruptPin));
+  //noInterrupts();
   Serial.println("Motion");
   motionFlag = true;
 }
@@ -123,11 +125,14 @@ void setup()
   
   timer.attach(10, timerTick);  // call the toggleLED function every 10 milliseconds
   
-
-  imu.EnableWom(40, bfs::Mpu9250::WOM_RATE_15_63HZ);
+  /* 
+  * Enable wake on motion with a threshold of 40 mg and an accel data rate of
+  * 15.63 Hz 
+  */
+  imu.EnableWom(40, bfs::Mpu9250::WOM_RATE_7_81HZ);
   /* Attach the interrupt to pin 9 */
-  pinMode(33, INPUT);
-  attachInterrupt(33, wakeup, RISING);
+  pinMode(interruptPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), wakeup, RISING);
 
 }
 
@@ -269,13 +274,8 @@ void loop()
 
   if (motionFlag){
     //noInterrupts();
-    digitalWrite(ledMotionPin, HIGH);
-    delay(1000);
-    digitalWrite(ledMotionPin, LOW);
     motionFlag = false;
-
     if (imu.Read()) {
-
       Serial.print("Aceleration on X: ");
       Serial.println(imu.accel_x_mps2());
       Serial.print("Aceleration on Y: ");
@@ -283,8 +283,12 @@ void loop()
       Serial.print("Aceleration on Z: ");
       Serial.println(imu.accel_z_mps2());
     }
+    digitalWrite(ledMotionPin, HIGH);
+    delay(200);
+    digitalWrite(ledMotionPin, LOW);
+    //interrupts();
+    attachInterrupt(digitalPinToInterrupt(interruptPin), wakeup, RISING);
 
-    interrupts();
   }
 
   
