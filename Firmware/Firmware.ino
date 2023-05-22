@@ -45,14 +45,14 @@ const int buttonPin = 34;  // GPIO pin connected to the button
 bool buttonState = false;     // variable to store the button state
 
 // LED Variables
-const int ledPin = 20;  // GPIO pin connected to the LED
+const int ledPin = 13;  // GPIO pin connected to the LED
 const int ledMotionPin = 26;  // GPIO pin connected to the LED
 
 
 
 void timerTick()
 {
-  digitalWrite(ledPin, !digitalRead(ledPin));  // toggle the LED state
+  // digitalWrite(ledPin, !digitalRead(ledPin));  // toggle the LED state
 }
 
 /* 
@@ -84,7 +84,7 @@ void onReceiveFunction()
 void wakeup() {
   detachInterrupt(digitalPinToInterrupt(interruptPin));
   //noInterrupts();
-  Serial.println("Motion");
+  // Serial.println("Motion");
   motionFlag = true;
 }
 
@@ -129,11 +129,18 @@ void setup()
   * Enable wake on motion with a threshold of 40 mg and an accel data rate of
   * 15.63 Hz 
   */
-  imu.EnableWom(40, bfs::Mpu9250::WOM_RATE_7_81HZ);
+  imu.EnableWom(128, bfs::Mpu9250::WOM_RATE_7_81HZ);
   /* Attach the interrupt to pin 9 */
   pinMode(interruptPin, INPUT);
   attachInterrupt(digitalPinToInterrupt(interruptPin), wakeup, RISING);
 
+
+  // BLINK the LEDS
+  digitalWrite(ledPin, LOW);
+  digitalWrite(ledMotionPin, LOW);
+  delay(5000);
+  digitalWrite(ledPin, HIGH);  
+  digitalWrite(ledMotionPin, HIGH);
 }
 
 // Function to handle the communication commands.
@@ -169,30 +176,7 @@ int exeCommand(SerialCommand inCommand)
       Serial.println(imu.accel_y_mps2());
       Serial.print("Aceleration on Z: ");
       Serial.println(imu.accel_z_mps2());
-      
-//      Serial.print(imu.new_imu_data());
-//      Serial.print("\t");
-//      Serial.print(imu.new_mag_data());
-//      Serial.print("\t");
-//      Serial.print(imu.accel_x_mps2());
-//      Serial.print("\t");
-//      Serial.print(imu.accel_y_mps2());
-//      Serial.print("\t");
-//      Serial.print(imu.accel_z_mps2());
-//      Serial.print("\t");
-//      Serial.print(imu.gyro_x_radps());
-//      Serial.print("\t");
-//      Serial.print(imu.gyro_y_radps());
-//      Serial.print("\t");
-//      Serial.print(imu.gyro_z_radps());
-//      Serial.print("\t");
-//      Serial.print(imu.mag_x_ut());
-//      Serial.print("\t");
-//      Serial.print(imu.mag_y_ut());
-//      Serial.print("\t");
-//      Serial.print(imu.mag_z_ut());
-//      Serial.print("\t");
-//      Serial.println(imu.die_temp_c());
+
     }
 
     return 0;
@@ -202,7 +186,7 @@ int exeCommand(SerialCommand inCommand)
   else if (inCommand.command == 'S')
   {
 
-    digitalWrite(ledPin, HIGH);  // turn on the LED
+    digitalWrite(ledPin, LOW);  // turn on the LED
 
     return 0;
   }
@@ -212,7 +196,7 @@ int exeCommand(SerialCommand inCommand)
   else if (inCommand.command == 'E')
   {
     
-    digitalWrite(ledPin, LOW);   // turn off the LED
+    digitalWrite(ledPin, HIGH);   // turn off the LED
 
     return 0;
   }
@@ -221,7 +205,7 @@ int exeCommand(SerialCommand inCommand)
   else if (inCommand.command == 'V')
   {
     
-    Serial.println("V:0.1 Control Capture System");  
+    Serial.println("V:1.0 Control Capture System");  
     return 0;
 
   }
@@ -266,26 +250,28 @@ void loop()
 
   // Read if there bottom is pressed.
   int newButtonState = digitalRead(buttonPin);  // read the button state
+  
   // Checks for the rising event
   if (newButtonState == HIGH && buttonState == LOW) {
     Serial.println("P:");
   }
+
   buttonState = newButtonState;
 
   if (motionFlag){
     //noInterrupts();
     motionFlag = false;
-    if (imu.Read()) {
-      Serial.print("Aceleration on X: ");
-      Serial.println(imu.accel_x_mps2());
-      Serial.print("Aceleration on Y: ");
-      Serial.println(imu.accel_y_mps2());
-      Serial.print("Aceleration on Z: ");
-      Serial.println(imu.accel_z_mps2());
-    }
-    digitalWrite(ledMotionPin, HIGH);
-    delay(200);
+    // if (imu.Read()) {
+    //   Serial.print("Aceleration on X: ");
+    //   Serial.println(imu.accel_x_mps2());
+    //   Serial.print("Aceleration on Y: ");
+    //   Serial.println(imu.accel_y_mps2());
+    //   Serial.print("Aceleration on Z: ");
+    //   Serial.println(imu.accel_z_mps2());
+    // }
     digitalWrite(ledMotionPin, LOW);
+    delay(200);
+    digitalWrite(ledMotionPin, HIGH);
     //interrupts();
     attachInterrupt(digitalPinToInterrupt(interruptPin), wakeup, RISING);
 
